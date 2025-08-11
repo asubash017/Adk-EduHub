@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from .forms import AnnouncementForm
-from .models import Announcement  # Import the model here
+from .models import Announcement 
+from django.db.models import Q
 
 @login_required
 def announcement_list_view(request):
@@ -9,8 +10,11 @@ def announcement_list_view(request):
     if user_role == 'superadmin':
         announcements = Announcement.objects.all().order_by('-created_at')
     else:
-        announcements = Announcement.objects.filter(role_visible_to=user_role).order_by('-created_at')
+        announcements = Announcement.objects.filter(
+            Q(role_visible_to=user_role) | Q(role_visible_to='all')
+        ).order_by('-created_at')
     return render(request, 'announcements/announcement_list.html', {'announcements': announcements})
+
 
 @login_required
 def create_announcement(request):
