@@ -1,16 +1,18 @@
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 
-class RoleRequiredMixin:
-    """
-    Restricts view access based on allowed_roles list.
-    Example:
-        allowed_roles = ['admin', 'teacher']
-    """
-    allowed_roles = []
+class RoleRequiredMixin(UserPassesTestMixin):
+    role_required = 'admin', 'teacher'
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise PermissionDenied
-        if self.allowed_roles and request.user.role not in self.allowed_roles:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
+    def test_func(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        if self.role_required is None:
+            return True
+        return user.role.lower() == self.role_required.lower()
+
+    def handle_no_permission(self):
+        if self.raise_exception:
+            raise PermissionDenied(self.get_permission_denied_message())
+        return super().handle_no_permission()

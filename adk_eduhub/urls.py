@@ -20,7 +20,7 @@ urlpatterns = [
 
     path('courses/', include('courses.urls')),
 
-    path('announcements/', include(('announcements.urls', 'announcements'), namespace='announcements')),
+    path('announcements/', include('announcements.urls', namespace='announcements')),
 
     
 ]

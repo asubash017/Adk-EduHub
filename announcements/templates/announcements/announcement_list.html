@@ -1,24 +1,19 @@
 {% extends 'core/base.html' %}
+{% block title %}Announcements{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1>Announcements</h1>
-
-    {% if user.role in 'admin teacher' %}
-    <a href="{% url 'announcements:announcement_add' %}" class="btn btn-primary mb-3">Add Announcement</a>
-    {% endif %}
-
-    {% if announcements %}
-        <div class="list-group">
-            {% for announcement in announcements %}
-                <div class="list-group-item">
-                    <h5>{{ announcement.title }}</h5>
-                    <p>{{ announcement.content }}</p>
-                    <small class="text-muted">Posted on {{ announcement.created_at|date:"M d, Y" }}</small>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p>No announcements available.</p>
-    {% endif %}
-</div>
+<h2>Announcements for {{ request.user.role|title }}</h2>
+{% if announcements %}
+    <ul>
+    {% for announcement in announcements %}
+        <li>
+            <h4>{{ announcement.title }}</h4>
+            <p>{{ announcement.content|truncatewords:30 }}</p>
+            <small>Posted on {{ announcement.created_at|date:"M d, Y" }}</small>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No announcements available.</p>
+{% endif %}
 {% endblock %}
