@@ -7,9 +7,6 @@
 <h2>Welcome, Admin {{ user.username }}!</h2>
 
 {% if user.role == 'admin' or user.role == 'superadmin' %}
-  <a href="{% url 'announcements:create_announcement' %}" class="btn btn-primary mb-3">
-    + Add Announcement
-  </a>
 {% endif %}
 
 <div class="row">

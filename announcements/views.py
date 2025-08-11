@@ -1,24 +1,24 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Announcement
 from .forms import AnnouncementForm
-from .models import Announcement 
-from django.db.models import Q
-from core.decorators import role_required 
+
+def is_admin_or_teacher(user):
+    return user.role.lower() in ['admin', 'teacher']
 
 @login_required
 def announcement_list_view(request):
     user_role = request.user.role.lower()
-    if user_role == 'superadmin':
-        announcements = Announcement.objects.all().order_by('-created_at')
-    else:
-        announcements = Announcement.objects.filter(
-            role_visible_to__in=[user_role, 'all']
-        ).order_by('-created_at')
+
+    # Show announcements where role_visible_to matches user's role or is 'all'
+    announcements = Announcement.objects.filter(
+        role_visible_to__in=[user_role, 'all']
+    ).order_by('-created_at')
+
     return render(request, 'announcements/announcement_list.html', {'announcements': announcements})
 
-
 @login_required
-@role_required(['admin', 'teacher', 'superadmin'])
+@user_passes_test(is_admin_or_teacher)
 def create_announcement(request):
     if request.method == 'POST':
         form = AnnouncementForm(request.POST)
@@ -30,7 +30,7 @@ def create_announcement(request):
     return render(request, 'announcements/create_announcement.html', {'form': form})
 
 @login_required
-@role_required(['admin', 'teacher', 'superadmin'])
+@user_passes_test(is_admin_or_teacher)
 def edit_announcement(request, pk):
     announcement = get_object_or_404(Announcement, pk=pk)
     if request.method == 'POST':
@@ -43,7 +43,7 @@ def edit_announcement(request, pk):
     return render(request, 'announcements/edit_announcement.html', {'form': form})
 
 @login_required
-@role_required(['admin', 'teacher', 'superadmin'])
+@user_passes_test(is_admin_or_teacher)
 def delete_announcement(request, pk):
     announcement = get_object_or_404(Announcement, pk=pk)
     if request.method == 'POST':

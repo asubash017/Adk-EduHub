@@ -1,18 +1,17 @@
-{% if user.role|lower in 'admin teacher superadmin' %}
-  <a href="{% url 'announcements:create' %}" class="btn btn-primary mb-3">Add Announcement</a>
-{% endif %}
 
-<ul>
-  {% for announcement in announcements %}
-    <li>
-      <strong>{{ announcement.title }}</strong> — {{ announcement.created_at|date:"d M Y" }}
-      {% if user.role|lower in 'admin teacher superadmin' %}
-        <a href="{% url 'announcements:edit' announcement.pk %}">Edit</a> |
-        <a href="{% url 'announcements:delete' announcement.pk %}">Delete</a>
-      {% endif %}
-      <p>{{ announcement.content }}</p>
-    </li>
-  {% empty %}
-    <p>No announcements found.</p>
-  {% endfor %}
-</ul>
+{% for announcement in announcements %}
+    <div class="announcement-card">
+        <h3>{{ announcement.title }}</h3>
+        <p>{{ announcement.content }}</p>
+        <p><small>Visible to: {{ announcement.get_role_visible_to_display }}</small></p>
+
+        {% if user.role in 'admin teacher' %}
+            <a href="{% url 'announcements:edit' announcement.id %}">Edit</a> |
+            <a href="{% url 'announcements:delete' announcement.id %}">Delete</a>
+        {% endif %}
+    </div>
+{% endfor %}
+
+{% if user.role in 'admin teacher' %}
+    <a href="{% url 'announcements:create' %}" class="btn btn-primary">Add Announcement</a>
+{% endif %}
