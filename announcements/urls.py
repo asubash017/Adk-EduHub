@@ -1,9 +1,10 @@
 from django.urls import path
-from .views import AnnouncementListView, views
+from . import views
 
 app_name = 'announcements'
 
 urlpatterns = [
-    path('', AnnouncementListView.as_view(), name='announcement_list'),
+    path('', views.announcement_list_view, name='announcement_list'),
     path('create/', views.create_announcement, name='create_announcement'),
+    
 ]
