@@ -1,25 +1,17 @@
 from django import forms
-from .models import Announcement, ROLE_CHOICES
+from .models import Announcement
 
 class AnnouncementForm(forms.ModelForm):
     class Meta:
         model = Announcement
-        fields = ['title', 'content', 'role_visible_to']
+        fields = ['title', 'content', 'role_visible_to']  # Add your relevant fields here
 
-    # Limit roles selectable by user (optional, explained below)
     def __init__(self, *args, **kwargs):
-        user_role = kwargs.pop('user_role', None)
+        self.user_role = kwargs.pop('user_role', None)  # Optional if you want to use it
         super().__init__(*args, **kwargs)
-        if user_role == 'teacher':
-            # Teacher can't create announcements for admin or all
-            allowed_roles = [('teacher', 'Teacher'), ('student', 'Student')]
-            self.fields['role_visible_to'].choices = allowed_roles
-        elif user_role == 'admin':
-            # Admin can't create for superadmin but can create for all others
-            allowed_roles = [('admin', 'Admin'), ('teacher', 'Teacher'), ('student', 'Student'), ('all', 'All')]
-            self.fields['role_visible_to'].choices = allowed_roles
-        elif user_role == 'superadmin':
-            self.fields['role_visible_to'].choices = ROLE_CHOICES
-        else:
-            # No permission to create announcements
-            self.fields['role_visible_to'].choices = []
+
+        # Example: Limit role_visible_to choices based on user_role (optional)
+        if self.user_role and self.user_role != 'superadmin':
+            self.fields['role_visible_to'].choices = [
+                (self.user_role, self.user_role.capitalize())
+            ]
