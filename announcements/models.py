@@ -6,13 +6,15 @@ class Announcement(models.Model):
         ('admin', 'Admin'),
         ('teacher', 'Teacher'),
         ('student', 'Student'),
-        ('all', 'All'),  # You can add 'all' option to represent all roles
-        
+        ('all', 'All'),   # <--- Make sure this is here
     ]
-    title = models.CharField(max_length=255)
+
+    title = models.CharField(max_length=200)
     content = models.TextField()
     role_visible_to = models.CharField(max_length=20, choices=ROLE_CHOICES, default='all')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    # other fields...
+
 
 
