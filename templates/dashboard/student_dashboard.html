@@ -35,20 +35,20 @@
     </div>
 </div>
 
-<div class="mt-4">
+<div class="mt-5">
     <h3>Latest Announcements</h3>
     {% if announcements %}
         <ul class="list-group">
             {% for ann in announcements %}
                 <li class="list-group-item">
-                    <strong>{{ ann.title }}</strong><br>
-                    <small class="text-muted">Posted on {{ ann.created_at|date:"M d, Y" }}</small>
-                    <p>{{ ann.content }}</p>
+                    <strong>{{ ann.title }}</strong> - {{ ann.content }}
+                    <br>
+                    <small class="text-muted">Posted on {{ ann.created_at|date:"F j, Y" }}</small>
                 </li>
             {% endfor %}
         </ul>
     {% else %}
-        <p>No announcements at the moment.</p>
+        <p>No announcements to show.</p>
     {% endif %}
 </div>
 

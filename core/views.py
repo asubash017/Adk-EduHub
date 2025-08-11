@@ -65,41 +65,20 @@ def profile_view(request):
 
 @login_required
 def admin_dashboard(request):
-    user = request.user
-    # Admin sees all announcements (both teacher and student), or optionally filtered by role
-    announcements = Announcement.objects.filter(
-        role_visible_to__in=['teacher', 'student']
-    ).order_by('-created_at')
-
-    context = {
-        'announcements': announcements,
-    }
-    return render(request, 'dashboard/admin_dashboard.html', context)
+    announcements = Announcement.objects.filter(role_visible_to='admin').order_by('-created_at')
+    return render(request, 'dashboard/admin_dashboard.html', {'announcements': announcements})
 
 
 @login_required
 def teacher_dashboard(request):
-    # Teachers see announcements meant for teachers only
-    announcements = Announcement.objects.filter(
-        role_visible_to='teacher'
-    ).order_by('-created_at')
-
-    context = {
-        'announcements': announcements,
-    }
-    return render(request, 'dashboard/teacher_dashboard.html', context)
+    announcements = Announcement.objects.filter(role_visible_to='teacher').order_by('-created_at')
+    return render(request, 'dashboard/teacher_dashboard.html', {'announcements': announcements})
 
 
 @login_required
 def student_dashboard(request):
-    announcements = Announcement.objects.filter(
-        role_visible_to='student'
-    ).order_by('-created_at')[:5]  # latest 5 for dashboard summary
-
-    context = {
-        'announcements': announcements,
-    }
-    return render(request, 'dashboard/student_dashboard.html', context)
+    announcements = Announcement.objects.filter(role_visible_to='student').order_by('-created_at')
+    return render(request, 'dashboard/student_dashboard.html', {'announcements': announcements})
 
 
 @login_required

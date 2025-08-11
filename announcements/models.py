@@ -1,17 +1,18 @@
+# announcements/models.py
 from django.db import models
-from django.conf import settings
+from core.models import CustomUser  # adjust path if different
 
 class Announcement(models.Model):
     ROLE_CHOICES = [
-        ('student', 'Student'),
-        ('teacher', 'Teacher'),
         ('admin', 'Admin'),
+        ('teacher', 'Teacher'),
+        ('student', 'Student'),
     ]
-    title = models.CharField(max_length=200)
-    content = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    role_visible_to = models.CharField(max_length=10, choices=ROLE_CHOICES)
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    role_visible_to = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
     def __str__(self):
         return self.title

@@ -34,4 +34,23 @@
         </div>
     </div>
 </div>
+
+<!-- Announcements Section -->
+<div class="mt-5">
+    <h3>Latest Announcements</h3>
+    {% if announcements %}
+        <ul class="list-group">
+            {% for ann in announcements %}
+                <li class="list-group-item">
+                    <strong>{{ ann.title }}</strong> - {{ ann.content }}
+                    <br>
+                    <small class="text-muted">Posted on {{ ann.created_at|date:"F j, Y" }}</small>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No announcements to show.</p>
+    {% endif %}
+</div>
+
 {% endblock %}
