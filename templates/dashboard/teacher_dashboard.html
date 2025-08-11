@@ -6,6 +6,13 @@
 {% block content %}
 <h2>Welcome, Teacher {{ user.username }}!</h2>
 
+{% if user.role == 'admin' or user.role == 'teacher' or user.role == 'superadmin' %}
+  <a href="{% url 'announcements:create_announcement' %}" class="btn btn-primary mb-3">
+    + Add Announcement
+  </a>
+{% endif %}
+
+
 <!-- Example teacher stats or content here -->
 
 <!-- Announcements Section -->

@@ -1,18 +1,19 @@
-# announcements/models.py
 from django.db import models
-from core.models import CustomUser  # adjust path if different
+
+# announcements/models.py
+
+ROLE_CHOICES = (
+    ('admin', 'Admin'),
+    ('teacher', 'Teacher'),
+    ('student', 'Student'),
+    ('all', 'All'),
+)
 
 class Announcement(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('teacher', 'Teacher'),
-        ('student', 'Student'),
-    ]
-
     title = models.CharField(max_length=255)
     content = models.TextField()
+    role_visible_to = models.CharField(max_length=20, choices=ROLE_CHOICES, default='all')
     created_at = models.DateTimeField(auto_now_add=True)
-    role_visible_to = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.title
+

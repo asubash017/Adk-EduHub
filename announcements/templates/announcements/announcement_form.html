@@ -1,9 +1,10 @@
 {% extends "core/base.html" %}
+{% block title %}Create Announcement{% endblock %}
 {% block content %}
-<h2>{% if form.instance.pk %}Edit{% else %}New{% endif %} Announcement</h2>
-<form method="POST">
+  <h2>Create Announcement</h2>
+  <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Save</button>
-</form>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
 {% endblock %}

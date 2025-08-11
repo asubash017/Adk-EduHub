@@ -1,24 +1,25 @@
 from django import forms
-from .models import Announcement
+from .models import Announcement, ROLE_CHOICES
 
 class AnnouncementForm(forms.ModelForm):
     class Meta:
         model = Announcement
         fields = ['title', 'content', 'role_visible_to']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter title here'}),
-            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Write the announcement content here...'}),
-            'role_visible_to': forms.Select(attrs={'class': 'form-select'}),
-        }
 
-    def clean_title(self):
-        title = self.cleaned_data.get('title')
-        if len(title) < 5:
-            raise forms.ValidationError("Title must be at least 5 characters long.")
-        return title
-
-    def clean_content(self):
-        content = self.cleaned_data.get('content')
-        if not content or len(content.strip()) < 10:
-            raise forms.ValidationError("Content must be at least 10 characters long.")
-        return content
+    # Limit roles selectable by user (optional, explained below)
+    def __init__(self, *args, **kwargs):
+        user_role = kwargs.pop('user_role', None)
+        super().__init__(*args, **kwargs)
+        if user_role == 'teacher':
+            # Teacher can't create announcements for admin or all
+            allowed_roles = [('teacher', 'Teacher'), ('student', 'Student')]
+            self.fields['role_visible_to'].choices = allowed_roles
+        elif user_role == 'admin':
+            # Admin can't create for superadmin but can create for all others
+            allowed_roles = [('admin', 'Admin'), ('teacher', 'Teacher'), ('student', 'Student'), ('all', 'All')]
+            self.fields['role_visible_to'].choices = allowed_roles
+        elif user_role == 'superadmin':
+            self.fields['role_visible_to'].choices = ROLE_CHOICES
+        else:
+            # No permission to create announcements
+            self.fields['role_visible_to'].choices = []

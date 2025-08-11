@@ -1,13 +1,18 @@
-from django.views.generic import ListView
-from .models import Announcement
-from core.mixins import RoleRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from .forms import AnnouncementForm
 
-class AnnouncementListView(RoleRequiredMixin, ListView):
-    model = Announcement
-    template_name = 'announcements/announcement_list.html'
-    context_object_name = 'announcements'
-    role_required = None  # No strict role check here; filtering done in get_queryset
+@login_required
+def create_announcement(request):
+    user_role = request.user.role.lower()
+    if user_role not in ['admin', 'teacher', 'superadmin']:
+        return redirect('dashboard')  # no permission
 
-    def get_queryset(self):
-        user_role = self.request.user.role.lower()
-        return Announcement.objects.filter(role_visible_to=user_role).order_by('-created_at')
+    if request.method == 'POST':
+        form = AnnouncementForm(request.POST, user_role=user_role)
+        if form.is_valid():
+            form.save()
+            return redirect('announcement_list')  # or wherever you want to go
+    else:
+        form = AnnouncementForm(user_role=user_role)
+    return render(request, 'announcements/announcement_form.html', {'form': form})
