@@ -5,6 +5,7 @@ class Announcement(models.Model):
     ROLE_CHOICES = [
         ('student', 'Student'),
         ('teacher', 'Teacher'),
+        ('admin', 'Admin'),
     ]
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True, null=True)

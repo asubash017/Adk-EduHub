@@ -1,7 +1,8 @@
-from django.contrib import admin
-from .models import Announcement
+from django.contrib.auth.mixins import UserPassesTestMixin
 
-@admin.register(Announcement)
-class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ("title", "created_by", "created_at")
-    search_fields = ("title", "content")
+class RoleRequiredMixin(UserPassesTestMixin):
+    allowed_roles = []
+
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.role in self.allowed_roles
