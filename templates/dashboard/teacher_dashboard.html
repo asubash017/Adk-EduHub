@@ -1,0 +1,34 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<h2>Welcome, Teacher {{ user.username }}!</h2>
+
+<!-- Other dashboard cards here -->
+
+<h3 class="mt-5">Announcements</h3>
+
+<a href="{% url 'announcements:announcement_add' %}" class="btn btn-success mb-3">Add Announcement</a>
+
+{% if announcements %}
+    <div class="list-group">
+        {% for announcement in announcements %}
+            <div class="list-group-item">
+                <h5>{{ announcement.title }}</h5>
+                <p>{{ announcement.content }}</p>
+                <small class="text-muted">Posted on {{ announcement.created_at|date:"M d, Y" }}</small>
+                <div class="mt-2">
+                    {% if announcement.created_by == user or user.is_staff %}
+                        <a href="{% url 'announcements:announcement_edit' announcement.pk %}" class="btn btn-sm btn-primary">Edit</a>
+                        <a href="{% url 'announcements:announcement_delete' announcement.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No announcements available.</p>
+{% endif %}
+
+{% endblock %}

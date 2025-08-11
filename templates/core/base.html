@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}ADK EduHub{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet" />
+
+    <style>
+        body[data-theme="dark"] {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .sidebar {
+            height: 100vh;
+            background-color: #343a40;
+            color: white;
+            padding: 1rem;
+            position: fixed;
+            width: 220px;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+        .sidebar a {
+            color: white;
+            display: block;
+            padding: 0.75rem 0;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .sidebar a:hover {
+            background-color: #495057;
+            color: #f8f9fa;
+        }
+        main {
+            margin-left: 230px;
+            padding: 1rem;
+        }
+        /* Responsive sidebar for smaller devices */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                height: auto;
+                width: 100%;
+            }
+            main {
+                margin-left: 0;
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="sidebar">
+        <h4>ADK EduHub</h4>
+        <nav>
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'course_list' %}">Courses</a>
+            <a href="{% url 'profile' %}">Profile</a>
+            <a href="{% url 'announcements:announcement_list' %}">Announcements</a>
+            <a href="{% url 'settings' %}">Settings</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+
+        <hr />
+
+        <div>
+            <label for="darkModeToggle" class="form-check-label">Dark Mode</label>
+            <input type="checkbox" id="darkModeToggle" class="form-check-input" />
+        </div>
+    </div>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS Bundle (Popper + Bootstrap) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const toggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+
+        // Load theme from localStorage
+        if(localStorage.getItem('theme') === 'dark'){
+            html.setAttribute('data-theme', 'dark');
+            toggle.checked = true;
+        }
+
+        toggle.addEventListener('change', () => {
+            if(toggle.checked){
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    </script>
+</body>
+</html>

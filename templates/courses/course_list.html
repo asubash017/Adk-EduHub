@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+
+{% block title %}Courses{% endblock %}
+
+{% block content %}
+<h2>Course List</h2>
+<a href="{% url 'course_create' %}">+ Add New Course</a>
+<table border="1" cellpadding="10" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Instructor</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course in courses %}
+        <tr>
+            <td>{{ course.title }}</td>
+            <td>{{ course.description }}</td>
+            <td>{{ course.instructor.get_full_name }}</td>
+            <td>
+                <a href="{% url 'course_update' course.pk %}">Edit</a> |
+                <a href="{% url 'course_delete' course.pk %}">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No courses available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

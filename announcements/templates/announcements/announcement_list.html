@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+{% block content %}
+<h2>Announcements</h2>
+{% if user.role in "admin teacher" %}
+    <a href="{% url 'announcement_create' %}" class="btn btn-primary">+ New Announcement</a>
+{% endif %}
+<ul>
+    {% for ann in announcements %}
+        <li>
+            <strong>{{ ann.title }}</strong> - {{ ann.content }} <br>
+            <small>By {{ ann.created_by.username }} on {{ ann.created_at|date:"M d, Y" }}</small>
+            {% if user.role in "admin teacher" %}
+                | <a href="{% url 'announcement_edit' ann.pk %}">Edit</a>
+                | <a href="{% url 'announcement_delete' ann.pk %}">Delete</a>
+            {% endif %}
+        </li>
+    {% empty %}
+        <p>No announcements yet.</p>
+    {% endfor %}
+</ul>
+{% endblock %}

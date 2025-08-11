@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ view.object.title if view.object else "Create Admin Announcement" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>{{ view.object.title if view.object else "Create Admin Announcement" }}</h2>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="mb-3">
+      <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}
+        <div class="text-danger small">{{ form.title.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.content.id_for_label }}" class="form-label">Content</label>
+      {{ form.content }}
+      {% if form.content.errors %}
+        <div class="text-danger small">{{ form.content.errors }}</div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Admin Announcement</button>
+    <a href="{% url 'announcement_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+  </form>
+</div>
+{% endblock %}

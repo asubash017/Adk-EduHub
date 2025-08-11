@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<h2>Welcome, Student {{ user.username }}!</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Enrolled Courses</h5>
+                <p class="card-text">You are enrolled in 6 courses.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Upcoming Exams</h5>
+                <p class="card-text">2 exams scheduled this month.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-info text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Pending Assignments</h5>
+                <p class="card-text">You have 4 assignments due.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Latest Announcements</h3>
+    {% if announcements %}
+        <ul class="list-group">
+            {% for ann in announcements %}
+                <li class="list-group-item">
+                    <strong>{{ ann.title }}</strong><br>
+                    <small class="text-muted">Posted on {{ ann.created_at|date:"M d, Y" }}</small>
+                    <p>{{ ann.content }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No announcements at the moment.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
