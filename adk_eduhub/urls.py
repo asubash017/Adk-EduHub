@@ -25,6 +25,8 @@ urlpatterns = [
 
     path('announcements/', include('announcements.urls', namespace='announcements')),
 
+    path('notes/', include('notes.urls')),
+
     
 ]
 
