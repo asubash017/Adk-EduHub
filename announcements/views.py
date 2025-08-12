@@ -2,17 +2,17 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Announcement
 from .forms import AnnouncementForm
+from django.db.models import Q
 
 def is_admin_or_teacher(user):
     return user.role.lower() in ['admin', 'teacher']
 
 @login_required
 def announcement_list_view(request):
-    user_role = request.user.role.lower()
+    user_role = request.user.role
 
-    # Show announcements where role_visible_to matches user's role or is 'all'
     announcements = Announcement.objects.filter(
-        role_visible_to__in=[user_role, 'all']
+        Q(role_visible_to__icontains=user_role) | Q(role_visible_to__icontains='all')
     ).order_by('-created_at')
 
     return render(request, 'announcements/announcement_list.html', {'announcements': announcements})
