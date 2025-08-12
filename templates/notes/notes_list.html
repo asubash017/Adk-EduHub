@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Notes & Materials</h2>
+{% if user.role in "teacher admin" %}
+<a href="{% url 'note_upload' %}" class="btn btn-primary">Upload New Note</a>
+{% endif %}
+
+<table class="table mt-3">
+    <tr>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Course</th>
+        <th>Uploaded By</th>
+        <th>Date</th>
+        <th>Action</th>
+    </tr>
+    {% for note in notes %}
+    <tr>
+        <td>{{ note.title }}</td>
+        <td>{{ note.description }}</td>
+        <td>{{ note.course }}</td>
+        <td>{{ note.uploaded_by.username }}</td>
+        <td>{{ note.uploaded_at }}</td>
+        <td>
+            <a href="{{ note.file.url }}" class="btn btn-success" download>Download</a>
+            {% if user == note.uploaded_by or user.role == 'admin' %}
+                <a href="{% url 'note_delete' note.id %}" class="btn btn-danger">Delete</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
