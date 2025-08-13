@@ -1,64 +1,140 @@
-{% for comment in comments %}
-<div class="comment" id="comment-{{ comment.id }}">
-    <p><strong>{{ comment.user.username }}</strong>: {{ comment.content }}</p>
-    
-    <!-- Like/Dislike -->
-    <a href="#" class="like-btn" data-id="{{ comment.id }}">👍 <span class="like-count">{{ comment.likes.count }}</span></a>
-    <a href="#" class="dislike-btn" data-id="{{ comment.id }}">👎 <span class="dislike-count">{{ comment.dislikes.count }}</span></a>
+{% extends 'core/base.html' %}
 
-    <!-- Reply Form -->
-    <form method="POST" action="{% url 'notes:note_detail' note.pk %}" class="reply-form">
-        {% csrf_token %}
-        <input type="hidden" name="parent" value="{{ comment.id }}">
-        <input type="text" name="content" placeholder="Reply..." required>
-        <button type="submit">Reply</button>
-    </form>
+{% block content %}
+<div class="card p-3 shadow-sm mb-4">
+    <h2>{{ note.title }}</h2>
 
-    {% for reply in comment.replies.all %}
-    <div class="reply ms-4">
-        <strong>{{ reply.user.username }}</strong>: {{ reply.content }}
-        <a href="{% url 'notes:note_comment_delete' reply.id %}">Delete</a>
-    </div>
-    {% endfor %}
+    <p><strong>Description:</strong> {{ note.description|default:"No description provided" }}</p>
+
+    <p>
+        <strong>Uploaded By:</strong> {{ note.uploaded_by.get_full_name|default:note.uploaded_by.username }}
+    </p>
+
+    <p><strong>Uploaded On:</strong> {{ note.uploaded_at|date:"F j, Y, g:i a" }}</p>
+
+    <p>
+        <a href="{{ note.file.url }}" class="btn btn-primary" download>Download</a>
+
+        {% if user.role|lower == "admin" %}
+            <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
+            <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-danger ms-1">Delete</a>
+
+        {% elif user.role|lower == "teacher" %}
+            <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
+            {% if note.uploaded_by == user %}
+                <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-danger ms-1">Delete</a>
+            {% endif %}
+        {% endif %}
+    </p>
+
+    <a href="{% url 'notes:note_list' %}" class="btn btn-secondary mt-2">Back to Notes</a>
 </div>
-{% endfor %}
 
+{# Comment Section #}
+<div class="card p-3 shadow-sm mb-4">
+    <h4>Comments</h4>
+
+    {% if user.is_authenticated %}
+    <form method="post" id="add-comment-form" class="mb-3">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <input type="hidden" name="parent" value="" id="parent-comment-id">
+        <button type="submit" class="btn btn-primary btn-sm">Add Comment</button>
+    </form>
+    {% else %}
+        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to comment.</p>
+    {% endif %}
+
+    <div class="comments-list">
+        {% for comment in comments %}
+            <div class="border p-2 mb-2 rounded comment-item" id="comment-{{ comment.pk }}">
+                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
+                <span class="text-muted">• {{ comment.created_at|date:"F j, Y, g:i a" }}</span>
+                <p>{{ comment.content }}</p>
+
+                {# Like/Dislike Buttons #}
+                <button class="btn btn-sm btn-outline-success like-btn" data-id="{{ comment.pk }}">
+                    👍 <span class="like-count">{{ comment.likes.count }}</span>
+                </button>
+                <button class="btn btn-sm btn-outline-danger dislike-btn" data-id="{{ comment.pk }}">
+                    👎 <span class="dislike-count">{{ comment.dislikes.count }}</span>
+                </button>
+
+                {# Reply Button #}
+                {% if user.is_authenticated %}
+                    <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ comment.pk }}">
+                        Reply
+                    </button>
+                {% endif %}
+
+                {# Delete Button #}
+                {% if user.role|lower == "admin" or comment.user == user %}
+                    <a href="{% url 'notes:note_comment_delete' comment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                {% endif %}
+
+                {# Replies #}
+                <div class="replies ms-4 mt-2">
+                    {% for reply in comment.replies.all %}
+                        <div class="border p-2 mb-2 rounded" id="comment-{{ reply.pk }}">
+                            <strong>{{ reply.user.get_full_name|default:reply.user.username }}</strong>
+                            <span class="text-muted">• {{ reply.created_at|date:"F j, Y, g:i a" }}</span>
+                            <p>{{ reply.content }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">No comments yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+$(document).ready(function(){
 
-document.querySelectorAll('.like-btn').forEach(btn=>{
-    btn.addEventListener('click', function(e){
-        e.preventDefault();
-        const commentId = this.dataset.id;
+    // Reply button click: set parent comment id in hidden input
+    $('.reply-btn').click(function(){
+        var commentId = $(this).data('id');
+        $('#parent-comment-id').val(commentId);
+        $('html, body').animate({
+            scrollTop: $("#add-comment-form").offset().top
+        }, 300);
+    });
 
-        fetch(`/notes/comment/like/${commentId}/`, {
+    // AJAX Like button
+    $('.like-btn').click(function(){
+        var btn = $(this);
+        var commentId = btn.data('id');
+        $.ajax({
+            url: "{% url 'notes:comment_like_toggle' 0 %}".replace('0', commentId),
             method: 'POST',
-            headers: {'X-CSRFToken': csrftoken},
-        })
-        .then(res => res.json())
-        .then(data => {
-            const div = document.getElementById(`comment-${commentId}`);
-            div.querySelector('.like-count').innerText = data.likes;
-            div.querySelector('.dislike-count').innerText = data.dislikes;
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(data){
+                btn.find('.like-count').text(data.likes);
+                btn.siblings('.dislike-btn').find('.dislike-count').text(data.dislikes);
+            }
         });
     });
-});
 
-document.querySelectorAll('.dislike-btn').forEach(btn=>{
-    btn.addEventListener('click', function(e){
-        e.preventDefault();
-        const commentId = this.dataset.id;
-
-        fetch(`/notes/comment/dislike/${commentId}/`, {
+    // AJAX Dislike button
+    $('.dislike-btn').click(function(){
+        var btn = $(this);
+        var commentId = btn.data('id');
+        $.ajax({
+            url: "{% url 'notes:comment_dislike_toggle' 0 %}".replace('0', commentId),
             method: 'POST',
-            headers: {'X-CSRFToken': csrftoken},
-        })
-        .then(res => res.json())
-        .then(data => {
-            const div = document.getElementById(`comment-${commentId}`);
-            div.querySelector('.like-count').innerText = data.likes;
-            div.querySelector('.dislike-count').innerText = data.dislikes;
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(data){
+                btn.find('.dislike-count').text(data.dislikes);
+                btn.siblings('.like-btn').find('.like-count').text(data.likes);
+            }
         });
     });
+
 });
 </script>
+{% endblock %}
