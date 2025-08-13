@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="card p-3 shadow-sm">
+<div class="card p-3 shadow-sm mb-4">
     <h2>{{ note.title }}</h2>
 
     <p><strong>Description:</strong> {{ note.description|default:"No description provided" }}</p>
@@ -30,5 +30,39 @@
     </p>
 
     <a href="{% url 'notes:note_list' %}" class="btn btn-secondary mt-2">Back to Notes</a>
+</div>
+
+{# Comment Section #}
+<div class="card p-3 shadow-sm">
+    <h4>Comments</h4>
+
+    {# Add comment form for logged-in users #}
+    {% if user.is_authenticated %}
+        <form method="post" class="mb-3">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit" class="btn btn-primary btn-sm">Add Comment</button>
+        </form>
+    {% else %}
+        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to comment.</p>
+    {% endif %}
+
+    {# List all comments #}
+    <div class="comments-list">
+        {% for comment in comments %}
+            <div class="border p-2 mb-2 rounded">
+                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong> 
+                <span class="text-muted">• {{ comment.created_at|date:"F j, Y, g:i a" }}</span>
+                <p>{{ comment.content }}</p>
+
+                {# Optional: admin can delete any comment, user can delete their own #}
+                {% if user.role|lower == "admin" or comment.user == user %}
+                    <a href="{% url 'notes:comment_delete' comment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="text-muted">No comments yet.</p>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

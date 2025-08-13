@@ -11,6 +11,8 @@ urlpatterns = [
     path('student/', views.student_notes_list, name='student_notes_list'),
     path('view/<int:note_id>/', views.note_view, name='note_view'),
     path('<int:pk>/', views.note_detail, name='note_detail'),
+    path('comment/delete/<int:pk>/', views.comment_delete, name='comment_delete'),
+
 
 
 

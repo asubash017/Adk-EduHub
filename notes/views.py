@@ -4,6 +4,8 @@ from django.contrib import messages
 from .models import Note
 from .forms import NoteForm
 from django.http import FileResponse, Http404
+from .models import NoteComment
+from .forms import NoteCommentForm
 import os
 
 @login_required
@@ -111,3 +113,32 @@ def note_detail(request, pk):
     return render(request, 'notes/note_detail.html', {'note': note})
 
 
+@login_required
+def note_detail(request, pk):
+    note = get_object_or_404(Note, pk=pk)
+    comments = note.comments.all().order_by('-created_at')  # show latest first
+
+    if request.method == 'POST':
+        form = NoteCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.note = note
+            comment.save()
+            messages.success(request, "Comment added successfully.")
+            return redirect('notes:note_detail', pk=note.pk)
+    else:
+        form = NoteCommentForm()
+
+    return render(request, 'notes/note_detail.html', {'note': note, 'comments': comments, 'form': form})
+
+
+@login_required
+def comment_delete(request, pk):
+    comment = get_object_or_404(NoteComment, pk=pk)
+    if request.user == comment.user or request.user.role == 'admin':
+        comment.delete()
+        messages.success(request, "Comment deleted successfully.")
+    else:
+        messages.error(request, "You don't have permission to delete this comment.")
+    return redirect('notes:note_detail', pk=comment.note.pk)
