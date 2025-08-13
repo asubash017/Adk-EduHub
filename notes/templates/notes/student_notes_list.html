@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Available Notes</h2>
+<table border="1">
+    <tr>
+        <th>Title</th>
+        <th>Course</th>
+        <th>Download</th>
+    </tr>
+    {% for note in notes %}
+    <tr>
+        <td>{{ note.title }}</td>
+        <td>{{ note.course.name }}</td>
+        <td>
+            {% if note.file %}
+                <a href="{{ note.file.url }}" download>Download</a>
+            {% else %}
+                No file
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No notes available.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}
