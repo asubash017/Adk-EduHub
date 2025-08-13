@@ -25,7 +25,7 @@ def note_view(request, note_id):
 
 @login_required
 def note_list(request):
-    notes = Note.objects.all()
+    notes = Note.objects.all().order_by('-uploaded_at')  # show newest first
     return render(request, 'notes/note_list.html', {'notes': notes})
 
 @login_required
@@ -47,26 +47,56 @@ def note_upload(request):
     return render(request, 'notes/note_upload.html', {'form': form})
 
 
+@login_required
 def note_edit(request, pk):
     note = get_object_or_404(Note, pk=pk)
+
+    # Admin can edit any note
+    if request.user.role.lower() == "admin":
+        pass  # allowed
+
+    # Teacher can edit any note
+    elif request.user.role.lower() == "teacher":
+        pass  # allowed
+
+    else:
+        messages.error(request, "You do not have permission to edit notes.")
+        return redirect('notes:note_list')
+
     if request.method == 'POST':
         form = NoteForm(request.POST, request.FILES, instance=note)
         if form.is_valid():
             form.save()
+            messages.success(request, "Note updated successfully.")
             return redirect('notes:note_list')
     else:
         form = NoteForm(instance=note)
-    return render(request, 'notes/note_form.html', {'form': form, 'edit': True})
+
+    return render(request, 'notes/note_form.html', {'form': form})
+
 
 
 @login_required
-def note_delete(request, note_id):
-    note = get_object_or_404(Note, id=note_id)
-    if request.user == note.uploaded_by or request.user.role == 'admin':
+def note_delete(request, pk):
+    note = get_object_or_404(Note, pk=pk)
+
+    # Admin can delete any note
+    if request.user.role.lower() == "admin":
         note.delete()
         messages.success(request, "Note deleted successfully.")
-    else:
-        messages.error(request, "You don't have permission to delete this note.")
+        return redirect('notes:note_list')
+
+    # Teacher can delete only their own notes
+    if request.user.role.lower() == "teacher":
+        if note.uploaded_by == request.user:
+            note.delete()
+            messages.success(request, "Note deleted successfully.")
+        else:
+            messages.error(request, "You can only delete notes you uploaded.")
+        return redirect('notes:note_list')
+
+    # Students & others - no access
+    messages.error(request, "You do not have permission to delete this note.")
     return redirect('notes:note_list')
 
 @login_required
