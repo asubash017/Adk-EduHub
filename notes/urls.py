@@ -4,17 +4,8 @@ from . import views
 app_name = 'notes'
 
 urlpatterns = [
-    path('', views.note_list, name='note_list'),
-    path('upload/', views.note_upload, name='note_upload'),
-    path('edit/<int:pk>/', views.note_edit, name='note_edit'),
-    path('delete/<int:note_id>/', views.note_delete, name='note_delete'),
-    path('student/', views.student_notes_list, name='student_notes_list'),
-    path('view/<int:note_id>/', views.note_view, name='note_view'),
     path('<int:pk>/', views.note_detail, name='note_detail'),
-    path('comment/delete/<int:pk>/', views.comment_delete, name='comment_delete'),
-
-
-
-
-
+    path('comment/delete/<int:comment_id>/', views.note_comment_delete, name='note_comment_delete'),
+    path('comment/like/<int:comment_id>/', views.note_comment_like, name='note_comment_like'),
+    path('comment/dislike/<int:comment_id>/', views.note_comment_dislike, name='note_comment_dislike'),
 ]

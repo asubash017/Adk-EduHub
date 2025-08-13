@@ -1,17 +1,12 @@
 from django import forms
-from .models import Note
+from .models import Note, NoteComment
 
 class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
-        fields = ['title', 'description', 'file', 'course']
-
+        fields = ['title', 'description', 'file']
 
 class NoteCommentForm(forms.ModelForm):
     class Meta:
         model = NoteComment
         fields = ['content']
-        widgets = {
-            'content': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Add a comment...'})
-        }
-

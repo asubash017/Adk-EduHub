@@ -1,68 +1,64 @@
-{% extends 'core/base.html' %}
+{% for comment in comments %}
+<div class="comment" id="comment-{{ comment.id }}">
+    <p><strong>{{ comment.user.username }}</strong>: {{ comment.content }}</p>
+    
+    <!-- Like/Dislike -->
+    <a href="#" class="like-btn" data-id="{{ comment.id }}">👍 <span class="like-count">{{ comment.likes.count }}</span></a>
+    <a href="#" class="dislike-btn" data-id="{{ comment.id }}">👎 <span class="dislike-count">{{ comment.dislikes.count }}</span></a>
 
-{% block content %}
-<div class="card p-3 shadow-sm mb-4">
-    <h2>{{ note.title }}</h2>
+    <!-- Reply Form -->
+    <form method="POST" action="{% url 'notes:note_detail' note.pk %}" class="reply-form">
+        {% csrf_token %}
+        <input type="hidden" name="parent" value="{{ comment.id }}">
+        <input type="text" name="content" placeholder="Reply..." required>
+        <button type="submit">Reply</button>
+    </form>
 
-    <p><strong>Description:</strong> {{ note.description|default:"No description provided" }}</p>
-
-    <p>
-        <strong>Uploaded By:</strong> {{ note.uploaded_by.get_full_name|default:note.uploaded_by.username }}
-    </p>
-
-    <p><strong>Uploaded On:</strong> {{ note.uploaded_at|date:"F j, Y, g:i a" }}</p>
-
-    <p>
-        <a href="{{ note.file.url }}" class="btn btn-primary" download>Download</a>
-
-        {# Admin: can edit & delete everything #}
-        {% if user.role|lower == "admin" %}
-            <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
-            <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-danger ms-1">Delete</a>
-
-        {# Teacher: can edit all, but delete only their own notes #}
-        {% elif user.role|lower == "teacher" %}
-            <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
-            {% if note.uploaded_by == user %}
-                <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-danger ms-1">Delete</a>
-            {% endif %}
-        {% endif %}
-    </p>
-
-    <a href="{% url 'notes:note_list' %}" class="btn btn-secondary mt-2">Back to Notes</a>
-</div>
-
-{# Comment Section #}
-<div class="card p-3 shadow-sm">
-    <h4>Comments</h4>
-
-    {# Add comment form for logged-in users #}
-    {% if user.is_authenticated %}
-        <form method="post" class="mb-3">
-            {% csrf_token %}
-            {{ comment_form.as_p }}
-            <button type="submit" class="btn btn-primary btn-sm">Add Comment</button>
-        </form>
-    {% else %}
-        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to comment.</p>
-    {% endif %}
-
-    {# List all comments #}
-    <div class="comments-list">
-        {% for comment in comments %}
-            <div class="border p-2 mb-2 rounded">
-                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong> 
-                <span class="text-muted">• {{ comment.created_at|date:"F j, Y, g:i a" }}</span>
-                <p>{{ comment.content }}</p>
-
-                {# Optional: admin can delete any comment, user can delete their own #}
-                {% if user.role|lower == "admin" or comment.user == user %}
-                    <a href="{% url 'notes:comment_delete' comment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-                {% endif %}
-            </div>
-        {% empty %}
-            <p class="text-muted">No comments yet.</p>
-        {% endfor %}
+    {% for reply in comment.replies.all %}
+    <div class="reply ms-4">
+        <strong>{{ reply.user.username }}</strong>: {{ reply.content }}
+        <a href="{% url 'notes:note_comment_delete' reply.id %}">Delete</a>
     </div>
+    {% endfor %}
 </div>
-{% endblock %}
+{% endfor %}
+
+<script>
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+document.querySelectorAll('.like-btn').forEach(btn=>{
+    btn.addEventListener('click', function(e){
+        e.preventDefault();
+        const commentId = this.dataset.id;
+
+        fetch(`/notes/comment/like/${commentId}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken},
+        })
+        .then(res => res.json())
+        .then(data => {
+            const div = document.getElementById(`comment-${commentId}`);
+            div.querySelector('.like-count').innerText = data.likes;
+            div.querySelector('.dislike-count').innerText = data.dislikes;
+        });
+    });
+});
+
+document.querySelectorAll('.dislike-btn').forEach(btn=>{
+    btn.addEventListener('click', function(e){
+        e.preventDefault();
+        const commentId = this.dataset.id;
+
+        fetch(`/notes/comment/dislike/${commentId}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken},
+        })
+        .then(res => res.json())
+        .then(data => {
+            const div = document.getElementById(`comment-${commentId}`);
+            div.querySelector('.like-count').innerText = data.likes;
+            div.querySelector('.dislike-count').innerText = data.dislikes;
+        });
+    });
+});
+</script>
