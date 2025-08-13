@@ -110,17 +110,30 @@ def student_notes_list(request):
 
 @login_required
 def note_detail(request, pk):
+    """
+    Display note details with comments and handle new comment/reply submission.
+    """
     note = get_object_or_404(Note, pk=pk)
-    comments = note.comments.filter(parent__isnull=True).order_by('-created_at')  # top-level comments
 
+    # Only top-level comments for display
+    comments = note.comments.filter(parent__isnull=True).order_by('-created_at')
+
+    # Handle POST request for adding comments/replies
     if request.method == 'POST':
         form = NoteCommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
             comment.user = request.user
             comment.note = note
+
+            # If parent comment exists, attach it
+            parent_id = request.POST.get('parent')
+            if parent_id:
+                parent_comment = NoteComment.objects.get(id=parent_id)
+                comment.parent = parent_comment
+
             comment.save()
-            messages.success(request, "Comment added!")
+            messages.success(request, "Comment added successfully!")
             return redirect('notes:note_detail', pk=note.pk)
     else:
         form = NoteCommentForm()
@@ -128,7 +141,7 @@ def note_detail(request, pk):
     return render(request, 'notes/note_detail.html', {
         'note': note,
         'comments': comments,
-        'form': form
+        'comment_form': form  # must match template variable
     })
 
 
@@ -143,35 +156,3 @@ def note_comment_delete(request, comment_id):
     return redirect('notes:note_detail', pk=comment.note.pk)
 
 
-# AJAX Likes/Dislikes
-@login_required
-def note_comment_like(request, comment_id):
-    comment = get_object_or_404(NoteComment, id=comment_id)
-    user = request.user
-
-    if user in comment.likes.all():
-        comment.likes.remove(user)
-    else:
-        comment.likes.add(user)
-        comment.dislikes.remove(user)
-
-    return JsonResponse({
-        'likes': comment.likes.count(),
-        'dislikes': comment.dislikes.count()
-    })
-
-@login_required
-def note_comment_dislike(request, comment_id):
-    comment = get_object_or_404(NoteComment, id=comment_id)
-    user = request.user
-
-    if user in comment.dislikes.all():
-        comment.dislikes.remove(user)
-    else:
-        comment.dislikes.add(user)
-        comment.likes.remove(user)
-
-    return JsonResponse({
-        'likes': comment.likes.count(),
-        'dislikes': comment.dislikes.count()
-    })

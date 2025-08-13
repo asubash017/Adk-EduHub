@@ -48,13 +48,7 @@
                     <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ comment.pk }}">Reply</button>
                 {% endif %}
 
-                <!-- Like / Dislike Buttons -->
-                <button class="btn btn-sm btn-outline-success like-btn" data-id="{{ comment.pk }}">
-                    👍 <span class="like-count">{{ comment.likes.count }}</span>
-                </button>
-                <button class="btn btn-sm btn-outline-danger dislike-btn" data-id="{{ comment.pk }}">
-                    👎 <span class="dislike-count">{{ comment.dislikes.count }}</span>
-                </button>
+
 
                 <!-- Admin or owner can delete -->
                 {% if user.role|lower == "admin" or comment.user == user %}
@@ -68,18 +62,11 @@
                         <span class="text-muted">• {{ reply.created_at|date:"F j, Y, g:i a" }}</span>
                         <p>{{ reply.content }}</p>
 
-                        <!-- Reply button for reply -->
                         {% if user.is_authenticated %}
                             <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ reply.pk }}">Reply</button>
                         {% endif %}
 
-                        <!-- Like / Dislike Buttons -->
-                        <button class="btn btn-sm btn-outline-success like-btn" data-id="{{ reply.pk }}">
-                            👍 <span class="like-count">{{ reply.likes.count }}</span>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger dislike-btn" data-id="{{ reply.pk }}">
-                            👎 <span class="dislike-count">{{ reply.dislikes.count }}</span>
-                        </button>
+
 
                         {% if user.role|lower == "admin" or reply.user == user %}
                             <a href="{% url 'notes:note_comment_delete' reply.pk %}" class="btn btn-sm btn-danger">Delete</a>
@@ -97,43 +84,14 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-
-    // Handle reply button click
+    // Focus reply textarea
     $('.reply-btn').click(function() {
         let parentId = $(this).data('id');
         $('#parent-comment-id').val(parentId);
         $('#comment-form textarea').focus();
     });
 
-    // AJAX Like
-    $('.like-btn').click(function() {
-        let btn = $(this);
-        let commentId = btn.data('id');
-        $.ajax({
-            url: '{% url "notes:note_comment_like" 0 %}'.replace('0', commentId),
-            type: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            success: function(data) {
-                btn.find('.like-count').text(data.likes_count);
-                btn.siblings('.dislike-btn').find('.dislike-count').text(data.dislikes_count);
-            }
-        });
-    });
 
-    // AJAX Dislike
-    $('.dislike-btn').click(function() {
-        let btn = $(this);
-        let commentId = btn.data('id');
-        $.ajax({
-            url: '{% url "notes:note_comment_dislike" 0 %}'.replace('0', commentId),
-            type: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            success: function(data) {
-                btn.find('.dislike-count').text(data.dislikes_count);
-                btn.siblings('.like-btn').find('.like-count').text(data.likes_count);
-            }
-        });
-    });
 });
 </script>
 {% endblock %}
