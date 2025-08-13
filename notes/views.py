@@ -105,3 +105,9 @@ def student_notes_list(request):
     return render(request, 'notes/student_notes_list.html', {'notes': notes})
 
 
+@login_required
+def note_detail(request, pk):
+    note = get_object_or_404(Note, pk=pk)
+    return render(request, 'notes/note_detail.html', {'note': note})
+
+

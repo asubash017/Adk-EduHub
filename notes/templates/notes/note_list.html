@@ -10,7 +10,8 @@
   {% for note in notes %}
     <div class="mb-2">
       <strong>{{ note.title }}</strong> — 
-      <a href="{{ note.file.url }}" download>Download</a>
+      <a href="{{ note.file.url }}" download>Download</a> —
+      <a href="{% url 'notes:note_detail' note.pk %}">View</a>
 
       {# Admin: can edit & delete everything #}
       {% if user.role|lower == "admin" %}
