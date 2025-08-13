@@ -3,22 +3,14 @@
 {% block content %}
 <div class="card p-3 shadow-sm mb-4">
     <h2>{{ note.title }}</h2>
-
     <p><strong>Description:</strong> {{ note.description|default:"No description provided" }}</p>
-
-    <p>
-        <strong>Uploaded By:</strong> {{ note.uploaded_by.get_full_name|default:note.uploaded_by.username }}
-    </p>
-
+    <p><strong>Uploaded By:</strong> {{ note.uploaded_by.get_full_name|default:note.uploaded_by.username }}</p>
     <p><strong>Uploaded On:</strong> {{ note.uploaded_at|date:"F j, Y, g:i a" }}</p>
-
     <p>
         <a href="{{ note.file.url }}" class="btn btn-primary" download>Download</a>
-
         {% if user.role|lower == "admin" %}
             <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
             <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-danger ms-1">Delete</a>
-
         {% elif user.role|lower == "teacher" %}
             <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-warning ms-2">Edit</a>
             {% if note.uploaded_by == user %}
@@ -26,23 +18,22 @@
             {% endif %}
         {% endif %}
     </p>
-
     <a href="{% url 'notes:note_list' %}" class="btn btn-secondary mt-2">Back to Notes</a>
 </div>
 
-{# Comment Section #}
-<div class="card p-3 shadow-sm mb-4">
+<!-- Comment Section -->
+<div class="card p-3 shadow-sm">
     <h4>Comments</h4>
 
     {% if user.is_authenticated %}
-    <form method="post" id="add-comment-form" class="mb-3">
+    <form method="post" id="comment-form" class="mb-3">
         {% csrf_token %}
         {{ comment_form.as_p }}
-        <input type="hidden" name="parent" value="" id="parent-comment-id">
+        <input type="hidden" name="parent" id="parent-comment-id" value="">
         <button type="submit" class="btn btn-primary btn-sm">Add Comment</button>
     </form>
     {% else %}
-        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to comment.</p>
+    <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to comment.</p>
     {% endif %}
 
     <div class="comments-list">
@@ -52,7 +43,12 @@
                 <span class="text-muted">• {{ comment.created_at|date:"F j, Y, g:i a" }}</span>
                 <p>{{ comment.content }}</p>
 
-                {# Like/Dislike Buttons #}
+                <!-- Reply button -->
+                {% if user.is_authenticated %}
+                    <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ comment.pk }}">Reply</button>
+                {% endif %}
+
+                <!-- Like / Dislike Buttons -->
                 <button class="btn btn-sm btn-outline-success like-btn" data-id="{{ comment.pk }}">
                     👍 <span class="like-count">{{ comment.likes.count }}</span>
                 </button>
@@ -60,28 +56,36 @@
                     👎 <span class="dislike-count">{{ comment.dislikes.count }}</span>
                 </button>
 
-                {# Reply Button #}
-                {% if user.is_authenticated %}
-                    <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ comment.pk }}">
-                        Reply
-                    </button>
-                {% endif %}
-
-                {# Delete Button #}
+                <!-- Admin or owner can delete -->
                 {% if user.role|lower == "admin" or comment.user == user %}
                     <a href="{% url 'notes:note_comment_delete' comment.pk %}" class="btn btn-sm btn-danger">Delete</a>
                 {% endif %}
 
-                {# Replies #}
-                <div class="replies ms-4 mt-2">
-                    {% for reply in comment.replies.all %}
-                        <div class="border p-2 mb-2 rounded" id="comment-{{ reply.pk }}">
-                            <strong>{{ reply.user.get_full_name|default:reply.user.username }}</strong>
-                            <span class="text-muted">• {{ reply.created_at|date:"F j, Y, g:i a" }}</span>
-                            <p>{{ reply.content }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
+                <!-- Nested replies -->
+                {% for reply in comment.replies.all %}
+                    <div class="border p-2 mt-2 ms-4 rounded reply-item" id="comment-{{ reply.pk }}">
+                        <strong>{{ reply.user.get_full_name|default:reply.user.username }}</strong>
+                        <span class="text-muted">• {{ reply.created_at|date:"F j, Y, g:i a" }}</span>
+                        <p>{{ reply.content }}</p>
+
+                        <!-- Reply button for reply -->
+                        {% if user.is_authenticated %}
+                            <button class="btn btn-sm btn-outline-secondary reply-btn" data-id="{{ reply.pk }}">Reply</button>
+                        {% endif %}
+
+                        <!-- Like / Dislike Buttons -->
+                        <button class="btn btn-sm btn-outline-success like-btn" data-id="{{ reply.pk }}">
+                            👍 <span class="like-count">{{ reply.likes.count }}</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger dislike-btn" data-id="{{ reply.pk }}">
+                            👎 <span class="dislike-count">{{ reply.dislikes.count }}</span>
+                        </button>
+
+                        {% if user.role|lower == "admin" or reply.user == user %}
+                            <a href="{% url 'notes:note_comment_delete' reply.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
         {% empty %}
             <p class="text-muted">No comments yet.</p>
@@ -89,52 +93,47 @@
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
+<!-- AJAX & Reply JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function(){
+$(document).ready(function() {
 
-    // Reply button click: set parent comment id in hidden input
-    $('.reply-btn').click(function(){
-        var commentId = $(this).data('id');
-        $('#parent-comment-id').val(commentId);
-        $('html, body').animate({
-            scrollTop: $("#add-comment-form").offset().top
-        }, 300);
+    // Handle reply button click
+    $('.reply-btn').click(function() {
+        let parentId = $(this).data('id');
+        $('#parent-comment-id').val(parentId);
+        $('#comment-form textarea').focus();
     });
 
-    // AJAX Like button
-    $('.like-btn').click(function(){
-        var btn = $(this);
-        var commentId = btn.data('id');
+    // AJAX Like
+    $('.like-btn').click(function() {
+        let btn = $(this);
+        let commentId = btn.data('id');
         $.ajax({
-            url: "{% url 'notes:comment_like_toggle' 0 %}".replace('0', commentId),
-            method: 'POST',
+            url: '{% url "notes:note_comment_like" 0 %}'.replace('0', commentId),
+            type: 'POST',
             headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            success: function(data){
-                btn.find('.like-count').text(data.likes);
-                btn.siblings('.dislike-btn').find('.dislike-count').text(data.dislikes);
+            success: function(data) {
+                btn.find('.like-count').text(data.likes_count);
+                btn.siblings('.dislike-btn').find('.dislike-count').text(data.dislikes_count);
             }
         });
     });
 
-    // AJAX Dislike button
-    $('.dislike-btn').click(function(){
-        var btn = $(this);
-        var commentId = btn.data('id');
+    // AJAX Dislike
+    $('.dislike-btn').click(function() {
+        let btn = $(this);
+        let commentId = btn.data('id');
         $.ajax({
-            url: "{% url 'notes:comment_dislike_toggle' 0 %}".replace('0', commentId),
-            method: 'POST',
+            url: '{% url "notes:note_comment_dislike" 0 %}'.replace('0', commentId),
+            type: 'POST',
             headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            success: function(data){
-                btn.find('.dislike-count').text(data.dislikes);
-                btn.siblings('.like-btn').find('.like-count').text(data.likes);
+            success: function(data) {
+                btn.find('.dislike-count').text(data.dislikes_count);
+                btn.siblings('.like-btn').find('.like-count').text(data.likes_count);
             }
         });
     });
-
 });
 </script>
 {% endblock %}
