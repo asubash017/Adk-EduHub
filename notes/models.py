@@ -8,6 +8,16 @@ class Note(models.Model):
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+        # New fields for edit tracking
+    last_edited_at = models.DateTimeField(null=True, blank=True)
+    last_edited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='edited_notes'
+    )
+
+
 class NoteComment(models.Model):
     note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

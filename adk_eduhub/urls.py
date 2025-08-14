@@ -27,6 +27,9 @@ urlpatterns = [
 
     path('notes/', include('notes.urls')),
 
+    path('assignments/', include('assignments.urls', namespace='assignments')),
+
+
     
 ]
 

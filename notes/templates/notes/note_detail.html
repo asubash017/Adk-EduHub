@@ -6,6 +6,9 @@
     <p><strong>Description:</strong> {{ note.description|default:"No description provided" }}</p>
     <p><strong>Uploaded By:</strong> {{ note.uploaded_by.get_full_name|default:note.uploaded_by.username }}</p>
     <p><strong>Uploaded On:</strong> {{ note.uploaded_at|date:"F j, Y, g:i a" }}</p>
+    {% if note.last_edited_by %}
+    <p><em>Last edited by {{ note.last_edited_by.username }} on {{ note.last_edited_at }}</em></p>
+    {% endif %}
     <p>
         <a href="{{ note.file.url }}" class="btn btn-primary" download>Download</a>
         {% if user.role|lower == "admin" %}

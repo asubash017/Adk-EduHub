@@ -4,6 +4,7 @@ from django.contrib import messages
 from .models import Note, NoteComment
 from .forms import NoteForm, NoteCommentForm
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from django.http import JsonResponse
 import os
 
@@ -52,28 +53,25 @@ def note_upload(request):
 def note_edit(request, pk):
     note = get_object_or_404(Note, pk=pk)
 
-    # Admin can edit any note
-    if request.user.role.lower() == "admin":
-        pass  # allowed
-
-    # Teacher can edit any note
-    elif request.user.role.lower() == "teacher":
-        pass  # allowed
-
-    else:
+    # Role-based permissions
+    if request.user.role.lower() not in ["admin", "teacher"]:
         messages.error(request, "You do not have permission to edit notes.")
         return redirect('notes:note_list')
 
     if request.method == 'POST':
         form = NoteForm(request.POST, request.FILES, instance=note)
         if form.is_valid():
-            form.save()
+            updated_note = form.save(commit=False)
+            updated_note.last_edited_by = request.user
+            updated_note.last_edited_at = timezone.now()
+            updated_note.save()
             messages.success(request, "Note updated successfully.")
             return redirect('notes:note_list')
     else:
         form = NoteForm(instance=note)
 
     return render(request, 'notes/note_form.html', {'form': form})
+
 
 
 
