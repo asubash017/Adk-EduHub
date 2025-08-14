@@ -18,8 +18,8 @@
     {% for assignment in assignments %}
       <tr>
         <td>{{ assignment.title }}</td>
-        <td>{{ assignment.course.name }}</td>
-        <td>{{ assignment.uploaded_by.get_full_name }}</td>
+        <td>{{ assignment.course.title }}</td>
+        <td>{{ assignment.uploaded_by_name }}</td>
         <td>{{ assignment.due_date|date:"Y-m-d" }}</td>
         <td>
           {% if assignment.last_edited_at %}

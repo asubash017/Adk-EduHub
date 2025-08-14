@@ -3,26 +3,22 @@
 
 <h2>{{ assignment.title }}</h2>
 
-<p><strong>Course:</strong> {{ assignment.course.name }}</p>
+<p><strong>Course:</strong> {{ assignment.course.title }}</p>
 <p><strong>Description:</strong> {{ assignment.description|default:"No description provided" }}</p>
-<p><strong>Uploaded By:</strong> {{ assignment.uploaded_by.get_full_name }}</p>
+<p><strong>Uploaded By:</strong> {{ assignment.uploaded_by_name }}</p>
 <p><strong>Due Date:</strong> {{ assignment.due_date|date:"Y-m-d" }}</p>
 <p><strong>Uploaded At:</strong> {{ assignment.uploaded_at|date:"Y-m-d H:i" }}</p>
 
-{% if user.role == 'admin' or user.role == 'teacher' %}
-    {% if assignment.last_edited_at %}
-        <p><strong>Last Edited:</strong> {{ assignment.last_edited_at|date:"Y-m-d H:i" }}
-            {% if assignment.last_edited_by %}
-                by {{ assignment.last_edited_by.get_full_name }}
-            {% endif %}
-        </p>
-    {% endif %}
+{% if assignment.last_edited_at %}
+    <p><strong>Last Edited:</strong> {{ assignment.last_edited_at|date:"Y-m-d H:i" }}
+        {% if assignment.last_edited_by %}
+            by {{ assignment.last_edited_by_name }}
+        {% endif %}
+    </p>
 {% endif %}
 
-{% if user.role == 'admin' or user.role == 'teacher' %}
-    {% if assignment.file %}
-        <p><strong>File:</strong> <a href="{{ assignment.file.url }}" download>Download</a></p>
-    {% endif %}
+{% if assignment.file %}
+    <p><strong>File:</strong> <a href="{{ assignment.file.url }}" download>Download</a></p>
 {% endif %}
 
 <div class="mt-3 d-flex gap-2">
