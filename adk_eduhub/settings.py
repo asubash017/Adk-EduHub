@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'announcements',
     'notes',
     'assignments',
+    'django_extensions',
     
 ]
 

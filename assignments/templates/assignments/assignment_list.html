@@ -1,36 +1,77 @@
-{% extends 'core/base.html' %}
-
+{% extends "core/base.html" %}
 {% block content %}
+
 <h2>Assignments</h2>
 
-{% if user.role|lower == "teacher" %}
-    <a href="{% url 'assignments:assignment_create' %}" class="btn btn-primary mb-3">Create New Assignment</a>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Course</th>
+      <th>Uploaded By</th>
+      <th>Due Date</th>
+      <th>Last Edited</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for assignment in assignments %}
+      <tr>
+        <td>{{ assignment.title }}</td>
+        <td>{{ assignment.course.name }}</td>
+        <td>{{ assignment.uploaded_by.get_full_name }}</td>
+        <td>{{ assignment.due_date|date:"Y-m-d" }}</td>
+        <td>
+          {% if assignment.last_edited_at %}
+            {{ assignment.last_edited_at|date:"Y-m-d H:i" }} 
+            {% if assignment.last_edited_by %}
+              by {{ assignment.last_edited_by.get_full_name }}
+            {% endif %}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="d-flex gap-1">
+
+          <!-- View button: everyone can view -->
+          <a href="{% url 'assignments:assignment_detail' assignment.pk %}" class="btn btn-sm btn-info">View</a>
+
+          <!-- Edit button: admin or teacher who uploaded -->
+          {% if user.role == 'admin' %}
+            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-sm btn-warning">Edit</a>
+          {% elif user.role == 'teacher' and assignment.uploaded_by_id == user.id %}
+            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-sm btn-warning">Edit</a>
+          {% endif %}
+
+          <!-- Delete button: admin, teacher who uploaded, or student who uploaded -->
+          {% if user.role == 'admin' %}
+            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+          {% elif user.role == 'teacher' and assignment.uploaded_by_id == user.id %}
+            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+          {% elif user.role == 'student' and assignment.uploaded_by_id == user.id %}
+            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+          {% endif %}
+
+          <!-- Download button: admin or teacher only -->
+          {% if assignment.file %}
+            {% if user.role == 'admin' %}
+              <a href="{{ assignment.file.url }}" class="btn btn-sm btn-secondary" download>Download</a>
+            {% elif user.role == 'teacher' %}
+              <a href="{{ assignment.file.url }}" class="btn btn-sm btn-secondary" download>Download</a>
+            {% endif %}
+          {% endif %}
+
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">No assignments found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Create button: only admin or teacher -->
+{% if user.role == 'admin' or user.role == 'teacher' %}
+  <a href="{% url 'assignments:assignment_create' %}" class="btn btn-success mt-3">Add New Assignment</a>
 {% endif %}
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Course</th>
-            <th>Uploaded By</th>
-            <th>Due Date</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for assignment in assignments %}
-        <tr>
-            <td>{{ assignment.title }}</td>
-            <td>{{ assignment.course }}</td>
-            <td>{{ assignment.uploaded_by.get_full_name|default:assignment.uploaded_by.username }}</td>
-            <td>{{ assignment.due_date|date:"F j, Y" }}</td>
-            <td>
-                <a href="{% url 'assignments:assignment_detail' assignment.pk %}" class="btn btn-sm btn-info">View</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">No assignments found.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}

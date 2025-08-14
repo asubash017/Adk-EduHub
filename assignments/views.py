@@ -1,82 +1,121 @@
+from django.utils import timezone
+from django.urls import reverse_lazy
+from django.http import HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import CreateView, ListView, DetailView
-from django.shortcuts import get_object_or_404
-from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from .models import Assignment, Submission
-from .forms import AssignmentForm, SubmissionForm
+from .models import Assignment
+from .forms import AssignmentForm, StudentAssignmentForm
 
-TEACHER = 'teacher'
-STUDENT = 'student'
+# --- role helpers ------------------------------------------------------------
+ADMIN = "admin"
+TEACHER = "teacher"
+STUDENT = "student"
+
+def user_role(user):
+    return getattr(user, "role", None)
+
+def is_admin(user):
+    return user_role(user) == ADMIN
 
 def is_teacher(user):
-    return getattr(user, 'role', None) == TEACHER
+    return user_role(user) == TEACHER
 
 def is_student(user):
-    return getattr(user, 'role', None) == STUDENT
+    return user_role(user) == STUDENT
 
 
+# --- permission mixins -------------------------------------------------------
+class CanEditAssignmentMixin(UserPassesTestMixin):
+    """Admin: can edit any. Teacher: only own. Student: cannot edit."""
+    def test_func(self):
+        user = self.request.user
+        obj = self.get_object()
+        if is_admin(user):
+            return True
+        if is_teacher(user):
+            return obj.uploaded_by_id == user.id
+        return False  # students cannot edit
+
+    def handle_no_permission(self):
+        return HttpResponseRedirect(reverse_lazy("assignments:assignment_list"))
+
+
+class CanDeleteAssignmentMixin(UserPassesTestMixin):
+    """Admin: any. Teacher: own only. Student: own only."""
+    def test_func(self):
+        user = self.request.user
+        obj = self.get_object()
+        if is_admin(user):
+            return True
+        if is_teacher(user) or is_student(user):
+            return obj.uploaded_by_id == user.id
+        return False
+
+    def handle_no_permission(self):
+        return HttpResponseRedirect(reverse_lazy("assignments:assignment_list"))
+
+
+# --- views -------------------------------------------------------------------
 class AssignmentListView(LoginRequiredMixin, ListView):
     model = Assignment
-    template_name = 'assignments/assignment_list.html'
-    context_object_name = 'assignments'
+    template_name = "assignments/assignment_list.html"
+    context_object_name = "assignments"
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('course', 'uploaded_by')
-        user = self.request.user
-        if is_teacher(user):
-            return qs.filter(uploaded_by=user)
-        return qs
+        # Everyone can view all assignments per spec.
+        return (
+            Assignment.objects.select_related("course", "uploaded_by", "last_edited_by")
+            .all()
+        )
 
 
 class AssignmentDetailView(LoginRequiredMixin, DetailView):
     model = Assignment
-    template_name = 'assignments/assignment_detail.html'
-    context_object_name = 'assignment'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if is_teacher(self.request.user):
-            context['submissions'] = self.object.submissions.select_related('student').all()
-        return context
+    template_name = "assignments/assignment_detail.html"
+    context_object_name = "assignment"
 
 
-class AssignmentCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class AssignmentCreateView(LoginRequiredMixin, CreateView):
     model = Assignment
-    form_class = AssignmentForm
-    template_name = 'assignments/assignment_form.html'
-    success_url = reverse_lazy('assignments:assignment_list')
+    template_name = "assignments/assignment_form.html"
 
-    def test_func(self):
-        return getattr(self.request.user, 'role', None) == 'teacher'
+    def get_form_class(self):
+        # Students: limited form; Admin/Teacher: full form.
+        return StudentAssignmentForm if is_student(self.request.user) else AssignmentForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        # You could pass user to form if you need further customization.
+        kwargs["initial"] = kwargs.get("initial", {})
+        if is_teacher(self.request.user) and "due_date" not in kwargs["initial"]:
+            # Optional: set a sensible default due date for teachers/admins.
+            kwargs["initial"]["due_date"] = timezone.now().date()
         return kwargs
 
     def form_valid(self, form):
         form.instance.uploaded_by = self.request.user
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse_lazy("assignments:assignment_list")
 
 
-class SubmissionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = Submission
-    form_class = SubmissionForm
-    template_name = 'assignments/submission_form.html'
-
-    def test_func(self):
-        return getattr(self.request.user, 'role', None) == 'student'
-
-    def dispatch(self, request, *args, **kwargs):
-        self.assignment = get_object_or_404(Assignment, pk=kwargs['pk'])
-        return super().dispatch(request, *args, **kwargs)
+class AssignmentUpdateView(LoginRequiredMixin, CanEditAssignmentMixin, UpdateView):
+    model = Assignment
+    template_name = "assignments/assignment_form.html"
+    form_class = AssignmentForm  # students never reach this view (blocked)
 
     def form_valid(self, form):
-        form.instance.assignment = self.assignment
-        form.instance.student = self.request.user
+        form.instance.last_edited_by = self.request.user
+        form.instance.last_edited_at = timezone.now()
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('assignments:assignment_detail', args=[self.assignment.pk])
+        return reverse_lazy("assignments:assignment_list")
+
+
+class AssignmentDeleteView(LoginRequiredMixin, CanDeleteAssignmentMixin, DeleteView):
+    model = Assignment
+    template_name = "assignments/assignment_confirm_delete.html"
+    success_url = reverse_lazy("assignments:assignment_list")

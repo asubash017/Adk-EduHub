@@ -1,50 +1,46 @@
-{% extends 'core/base.html' %}
-
+{% extends "core/base.html" %}
 {% block content %}
-<div class="card p-3 shadow-sm mb-4">
-    <h2>{{ assignment.title }}</h2>
-    <p><strong>Course:</strong> {{ assignment.course }}</p>
-    <p><strong>Description:</strong> {{ assignment.description|default:"No description provided" }}</p>
-    <p><strong>Uploaded By:</strong> {{ assignment.uploaded_by.get_full_name|default:assignment.uploaded_by.username }}</p>
-    <p><strong>Due Date:</strong> {{ assignment.due_date|date:"F j, Y" }}</p>
-    {% if assignment.attachment %}
-        <a href="{{ assignment.attachment.url }}" class="btn btn-primary" download>Download Assignment File</a>
+
+<h2>{{ assignment.title }}</h2>
+
+<p><strong>Course:</strong> {{ assignment.course.name }}</p>
+<p><strong>Description:</strong> {{ assignment.description|default:"No description provided" }}</p>
+<p><strong>Uploaded By:</strong> {{ assignment.uploaded_by.get_full_name }}</p>
+<p><strong>Due Date:</strong> {{ assignment.due_date|date:"Y-m-d" }}</p>
+<p><strong>Uploaded At:</strong> {{ assignment.uploaded_at|date:"Y-m-d H:i" }}</p>
+
+{% if user.role == 'admin' or user.role == 'teacher' %}
+    {% if assignment.last_edited_at %}
+        <p><strong>Last Edited:</strong> {{ assignment.last_edited_at|date:"Y-m-d H:i" }}
+            {% if assignment.last_edited_by %}
+                by {{ assignment.last_edited_by.get_full_name }}
+            {% endif %}
+        </p>
+    {% endif %}
+{% endif %}
+
+{% if user.role == 'admin' or user.role == 'teacher' %}
+    {% if assignment.file %}
+        <p><strong>File:</strong> <a href="{{ assignment.file.url }}" download>Download</a></p>
+    {% endif %}
+{% endif %}
+
+<div class="mt-3 d-flex gap-2">
+    <a href="{% url 'assignments:assignment_list' %}" class="btn btn-secondary">Back</a>
+
+    {% if user.role == 'admin' %}
+        <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-warning">Edit</a>
+        <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-danger">Delete</a>
+    {% elif user.role == 'teacher' %}
+        {% if assignment.uploaded_by_id == user.id %}
+            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-warning">Edit</a>
+            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-danger">Delete</a>
+        {% endif %}
+    {% elif user.role == 'student' %}
+        {% if assignment.uploaded_by_id == user.id %}
+            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-danger">Delete</a>
+        {% endif %}
     {% endif %}
 </div>
 
-{% if user.role|lower == "student" %}
-    <a href="{% url 'assignments:submit' assignment.pk %}" class="btn btn-success mb-3">Submit Assignment</a>
-{% endif %}
-
-{% if user.role|lower == "teacher" %}
-<h4>Submissions</h4>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Student</th>
-            <th>File</th>
-            <th>Submitted At</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for submission in submissions %}
-        <tr>
-            <td>{{ submission.student.get_full_name|default:submission.student.username }}</td>
-            <td>
-                {% if submission.file %}
-                    <a href="{{ submission.file.url }}" download>Download</a>
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td>{{ submission.submitted_at|date:"F j, Y, g:i a" }}</td>
-            <td>{{ submission.status }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4">No submissions yet.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
 {% endblock %}
