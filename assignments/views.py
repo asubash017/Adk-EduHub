@@ -48,7 +48,7 @@ class AssignmentCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('assignments:assignment_list')
 
     def test_func(self):
-        return is_teacher(self.request.user)
+        return getattr(self.request.user, 'role', None) == 'teacher'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -56,10 +56,9 @@ class AssignmentCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        obj = form.save(commit=False)
-        obj.uploaded_by = self.request.user
-        obj.save()
+        form.instance.uploaded_by = self.request.user
         return super().form_valid(form)
+
 
 
 class SubmissionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -68,30 +67,15 @@ class SubmissionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = 'assignments/submission_form.html'
 
     def test_func(self):
-        return is_student(self.request.user)
+        return getattr(self.request.user, 'role', None) == 'student'
 
     def dispatch(self, request, *args, **kwargs):
         self.assignment = get_object_or_404(Assignment, pk=kwargs['pk'])
         return super().dispatch(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['assignment'] = self.assignment
-        return context
-
-    def post(self, request, *args, **kwargs):
-        """Override post to ensure file is handled."""
-        form = self.get_form()
-        if form.is_valid():
-            submission = form.save(commit=False)
-            submission.assignment = self.assignment
-            submission.student = request.user
-            submission.save()
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
     def form_valid(self, form):
+        form.instance.assignment = self.assignment
+        form.instance.student = self.request.user
         return super().form_valid(form)
 
     def get_success_url(self):

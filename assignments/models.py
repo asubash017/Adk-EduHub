@@ -11,17 +11,13 @@ class Assignment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-
-    # File is optional. Use MEDIA settings below
     attachment = models.FileField(upload_to='assignments/', blank=True, null=True)
-
-    # New fields that previously caused migration issues
+    
+    # Only due_date now
     due_date = models.DateField(blank=True, null=True)
-    due_time = models.TimeField(blank=True, null=True)
-
+    
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments_uploaded')
-    uploaded_at = models.DateTimeField(auto_now_add=True)  # safe default; no migration default needed
-
+    uploaded_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -30,18 +26,12 @@ class Assignment(models.Model):
     def __str__(self):
         return f"{self.title} ({self.course})"
 
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.due_time and not self.due_date:
-            raise ValidationError({'due_date': 'Provide a due date if you set a due time.'})
-
     @property
     def due_datetime(self):
         if not self.due_date:
             return None
-        base_time = self.due_time or datetime.min.time()
-        dt = datetime.combine(self.due_date, base_time)
-        # Make aware if naive to avoid tz comparison issues
+        # Use start of day if you want datetime
+        dt = datetime.combine(self.due_date, datetime.min.time())
         return timezone.make_aware(dt, timezone.get_current_timezone()) if timezone.is_naive(dt) else dt
 
 
