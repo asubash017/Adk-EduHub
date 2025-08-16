@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="card shadow p-4">
+    <h2>Submission Details</h2>
+    <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+    <p><strong>Student:</strong> {{ submission.student.username }}</p>
+    <p><strong>Submitted At:</strong> {{ submission.submitted_at }}</p>
+    <p><strong>File:</strong> 
+        <a href="{{ submission.file.url }}" target="_blank">{{ submission.file.name }}</a>
+    </p>
+    {% if submission.remarks %}
+        <p><strong>Remarks:</strong> {{ submission.remarks }}</p>
+    {% endif %}
+</div>
+{% endblock %}

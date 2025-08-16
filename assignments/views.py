@@ -3,9 +3,9 @@ from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-
-from .models import Assignment
-from .forms import AssignmentForm, StudentAssignmentForm
+from .models import Assignment, Submission
+from .forms import AssignmentForm, StudentAssignmentForm, SubmissionForm, SubmissionFeedbackForm
+from django.shortcuts import get_object_or_404, render
 
 # --- role helpers ------------------------------------------------------------
 ADMIN = "admin"
@@ -57,24 +57,52 @@ class CanDeleteAssignmentMixin(UserPassesTestMixin):
 
 
 # --- views -------------------------------------------------------------------
-class AssignmentListView(LoginRequiredMixin, ListView):
+class AssignmentListView(ListView):
     model = Assignment
     template_name = "assignments/assignment_list.html"
     context_object_name = "assignments"
 
     def get_queryset(self):
-        # Everyone can view all assignments per spec.
+        # Prefetch submissions and related students to reduce queries
         return (
-            Assignment.objects.select_related("course", "uploaded_by", "last_edited_by")
-            .all()
+            super()
+            .get_queryset()
+            .select_related("course")
+            .prefetch_related("submissions__student")
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
 
-class AssignmentDetailView(LoginRequiredMixin, DetailView):
+         # Attach the student's submission directly to each assignment
+        if user.role == "student":
+            for assignment in context["assignments"]:
+                assignment.student_submission = assignment.submissions.filter(student=user).first()
+
+        return context
+    
+
+
+
+
+class AssignmentDetailView(DetailView):
     model = Assignment
     template_name = "assignments/assignment_detail.html"
     context_object_name = "assignment"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        assignment = self.get_object()
+        user = self.request.user
+
+        # Add submission for the logged-in student
+        submission = None
+        if user.is_authenticated and user.role == "student":
+            submission = assignment.submissions.filter(student=user).first()
+
+        context["submission"] = submission
+        return context
 
 class AssignmentCreateView(LoginRequiredMixin, CreateView):
     model = Assignment
@@ -119,3 +147,73 @@ class AssignmentDeleteView(LoginRequiredMixin, CanDeleteAssignmentMixin, DeleteV
     model = Assignment
     template_name = "assignments/assignment_confirm_delete.html"
     success_url = reverse_lazy("assignments:assignment_list")
+
+
+
+# Student: submit assignment
+class SubmissionCreateView(LoginRequiredMixin, CreateView):
+    model = Submission
+    form_class = SubmissionForm
+    template_name = "assignments/submission_form.html"
+
+    def form_valid(self, form):
+        form.instance.student = self.request.user
+        # Match URL kwarg name exactly
+        assignment_id = self.kwargs.get("assignment_id")
+        form.instance.assignment = get_object_or_404(Assignment, pk=assignment_id)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("assignments:assignment_list")
+
+
+
+# Student: update submission
+class SubmissionUpdateView(LoginRequiredMixin, UpdateView):
+    model = Submission
+    form_class = SubmissionForm
+    template_name = "assignments/submission_form.html"
+
+    def get_queryset(self):
+        # Student can only edit their own submission
+        return Submission.objects.filter(student=self.request.user)
+
+    def form_valid(self, form):
+        form.instance.last_edited_at = timezone.now()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("assignments:assignment_list")
+
+# Student: delete submission
+class SubmissionDeleteView(LoginRequiredMixin, DeleteView):
+    model = Submission
+    template_name = "assignments/submission_confirm_delete.html"
+    success_url = reverse_lazy("assignments:assignment_list")
+
+    def get_queryset(self):
+        return Submission.objects.filter(student=self.request.user)
+
+
+#Can view all submissions, give rating and feedback.
+class SubmissionFeedbackUpdateView(LoginRequiredMixin, UpdateView):
+    model = Submission
+    form_class = SubmissionFeedbackForm
+    template_name = "assignments/submission_feedback_form.html"
+
+    def get_queryset(self):
+        # Only admin or teacher
+        return Submission.objects.all()
+
+    def form_valid(self, form):
+        form.instance.rated_by = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("assignments:assignment_list")
+
+class SubmissionDetailView(LoginRequiredMixin, DetailView):
+    model = Submission
+    template_name = "assignments/submission_detail.html"
+    context_object_name = "submission"
+

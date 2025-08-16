@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Submissions for: {{ assignment.title }}</h2>
+
+  {% for submission in submissions %}
+  <div class="card p-3 shadow-sm mb-3">
+    <p><strong>Student:</strong> {{ submission.student.username }}</p>
+    <p><strong>File:</strong> {{ submission.file }}</p>
+    <p><strong>Submitted on:</strong> {{ submission.submitted_at }}</p>
+    <p><strong>Feedback:</strong> {{ submission.feedback|default:"No feedback yet" }}</p>
+    <p><strong>Rating:</strong> {{ submission.rating|default:"Not rated" }}</p>
+
+    <a href="{% url 'assignments:submission_feedback' submission.pk %}" class="btn btn-success btn-sm">Give Feedback</a>
+  </div>
+  {% empty %}
+    <p>No submissions yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

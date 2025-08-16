@@ -1,77 +1,89 @@
 {% extends "core/base.html" %}
+
 {% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Assignments</h2>
+        {% if user.role == 'admin' or user.role == 'teacher' %}
+            <a href="{% url 'assignments:assignment_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Add Assignment
+            </a>
+        {% endif %}
+    </div>
 
-<h2>Assignments</h2>
+    {% if assignments %}
+        {% for assignment in assignments %}
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-body">
+                    <!-- Assignment Info -->
+                    <h5 class="card-title fw-bold">{{ assignment.title }}</h5>
+                    <p class="text-muted mb-1">{{ assignment.description|default:"No description provided" }}</p>
+                    <p class="mb-1"><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+                    <p class="mb-2"><strong>Course:</strong> {{ assignment.course.name }}</p>
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Course</th>
-      <th>Uploaded By</th>
-      <th>Due Date</th>
-      <th>Last Edited</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for assignment in assignments %}
-      <tr>
-        <td>{{ assignment.title }}</td>
-        <td>{{ assignment.course.title }}</td>
-        <td>{{ assignment.uploaded_by_name }}</td>
-        <td>{{ assignment.due_date|date:"Y-m-d" }}</td>
-        <td>
-          {% if assignment.last_edited_at %}
-            {{ assignment.last_edited_at|date:"Y-m-d H:i" }} 
-            {% if assignment.last_edited_by %}
-              by {{ assignment.last_edited_by.get_full_name }}
-            {% endif %}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td class="d-flex gap-1">
+                    <!-- Actions -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <!-- View Assignment -->
+                        <a href="{% url 'assignments:assignment_detail' assignment.pk %}" 
+                           class="btn btn-primary btn-sm">
+                           <i class="bi bi-eye"></i> View
+                        </a>
 
-          <!-- View button: everyone can view -->
-          <a href="{% url 'assignments:assignment_detail' assignment.pk %}" class="btn btn-sm btn-info">View</a>
+                        <!-- Admin / Teacher Actions -->
+                        {% if user.role == 'admin' or user.role == 'teacher' %}
+                            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" 
+                               class="btn btn-warning btn-sm">
+                               <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Are you sure you want to delete this assignment?');">
+                               <i class="bi bi-trash"></i> Delete
+                            </a>
+                        {% endif %}
 
-          <!-- Edit button: admin or teacher who uploaded -->
-          {% if user.role == 'admin' %}
-            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-sm btn-warning">Edit</a>
-          {% elif user.role == 'teacher' and assignment.uploaded_by_id == user.id %}
-            <a href="{% url 'assignments:assignment_edit' assignment.pk %}" class="btn btn-sm btn-warning">Edit</a>
-          {% endif %}
+                        <!-- Student Submission Actions -->
+                        {% if user.role == 'student' %}
+                            {% if assignment.student_submission %}
+                                <span class="badge bg-success align-self-center">Submitted</span>
+                                <a href="{% url 'assignments:submission_detail' assignment.student_submission.pk %}" 
+                                   class="btn btn-info btn-sm">
+                                   <i class="bi bi-file-earmark-text"></i> View Submission
+                                </a>
+                            {% else %}
+                                <a href="{% url 'assignments:submission_create' assignment.pk %}" 
+                                   class="btn btn-success btn-sm">
+                                   <i class="bi bi-upload"></i> Submit
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
 
-          <!-- Delete button: admin, teacher who uploaded, or student who uploaded -->
-          {% if user.role == 'admin' %}
-            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-          {% elif user.role == 'teacher' and assignment.uploaded_by_id == user.id %}
-            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-          {% elif user.role == 'student' and assignment.uploaded_by_id == user.id %}
-            <a href="{% url 'assignments:assignment_delete' assignment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-          {% endif %}
-
-          <!-- Download button: admin or teacher only -->
-          {% if assignment.file %}
-            {% if user.role == 'admin' %}
-              <a href="{{ assignment.file.url }}" class="btn btn-sm btn-secondary" download>Download</a>
-            {% elif user.role == 'teacher' %}
-              <a href="{{ assignment.file.url }}" class="btn btn-sm btn-secondary" download>Download</a>
-            {% endif %}
-          {% endif %}
-
-        </td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="6">No assignments found.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Create button: only admin or teacher -->
-{% if user.role == 'admin' or user.role == 'teacher' %}
-  <a href="{% url 'assignments:assignment_create' %}" class="btn btn-success mt-3">Add New Assignment</a>
-{% endif %}
-
+                    <!-- Feedback Section (Admin/Teacher) -->
+                    {% if user.role == 'admin' or user.role == 'teacher' %}
+                        <div class="mt-3 border-top pt-2">
+                            <h6 class="fw-bold">Submissions:</h6>
+                            {% if assignment.submissions.all %}
+                                {% for sub in assignment.submissions.all %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>{{ sub.student.get_full_name }}</span>
+                                        <a href="{% url 'assignments:submission_feedback' sub.pk %}" 
+                                           class="btn btn-outline-info btn-sm">
+                                           <i class="bi bi-chat-square-text"></i> Provide Feedback
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">No submissions yet</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No assignments available.</p>
+    {% endif %}
+</div>
 {% endblock %}
