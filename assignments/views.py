@@ -5,8 +5,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Assignment, Submission
 from .forms import AssignmentForm, StudentAssignmentForm, SubmissionForm, SubmissionFeedbackForm
-from django.shortcuts import get_object_or_404, render
-
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
 # --- role helpers ------------------------------------------------------------
 ADMIN = "admin"
 TEACHER = "teacher"
@@ -217,3 +217,30 @@ class SubmissionDetailView(LoginRequiredMixin, DetailView):
     template_name = "assignments/submission_detail.html"
     context_object_name = "submission"
 
+
+
+def grade_submissions(request, pk):
+    assignment = get_object_or_404(Assignment, pk=pk)
+
+    if request.method == "POST":
+        # Loop through all submissions of this assignment
+        for submission in assignment.submissions.all():
+            rating_key = f"rating_{submission.pk}"
+            feedback_key = f"feedback_{submission.pk}"
+
+            rating = request.POST.get(rating_key)
+            feedback = request.POST.get(feedback_key)
+
+            # Only update if teacher/admin actually entered something
+            if rating is not None and rating != "":
+                submission.rating = int(rating)
+
+            if feedback is not None and feedback.strip() != "":
+                submission.feedback = feedback.strip()
+
+            submission.save()
+
+        messages.success(request, "Grades and feedback saved successfully!")
+        return redirect("assignments:assignment_detail", pk=assignment.pk)
+
+    return redirect("assignments:assignment_detail", pk=assignment.pk)

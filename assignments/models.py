@@ -86,3 +86,16 @@ class Submission(models.Model):
     @property
     def rated_by_name(self):
         return self.rated_by.get_full_name() if self.rated_by else ""
+
+class Submission(models.Model):
+    assignment = models.ForeignKey("Assignment", related_name="submissions", on_delete=models.CASCADE)
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    submitted_file = models.FileField(upload_to="submissions/", null=True, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    # Grading fields
+    rating = models.IntegerField(null=True, blank=True)
+    feedback = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.assignment.title}"

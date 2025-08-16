@@ -6,7 +6,11 @@
     <p><strong>Student:</strong> {{ submission.student.username }}</p>
     <p><strong>Submitted At:</strong> {{ submission.submitted_at }}</p>
     <p><strong>File:</strong> 
-        <a href="{{ submission.file.url }}" target="_blank">{{ submission.file.name }}</a>
+      {% if submission.submitted_file %}
+        <a href="{{ submission.submitted_file.url }}" target="_blank">{{ submission.submitted_file.name }}</a>
+      {% else %}
+        No file uploaded
+      {% endif %}
     </p>
     {% if submission.remarks %}
         <p><strong>Remarks:</strong> {{ submission.remarks }}</p>

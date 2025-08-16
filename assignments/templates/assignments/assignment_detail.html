@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">{{ assignment.title }}</h2>
         <a href="{% url 'assignments:assignment_list' %}" class="btn btn-secondary btn-sm">
@@ -9,7 +10,7 @@
         </a>
     </div>
 
-    <!-- Assignment Info -->
+    <!-- Assignment Details -->
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body">
             <p><strong>Course:</strong> {{ assignment.course.title }}</p>
@@ -32,35 +33,38 @@
         </div>
     </div>
 
-    <!-- Submissions Section -->
+    <!-- Submissions -->
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body">
             <h4>Submissions</h4>
 
             {% if user.role == 'student' %}
-                    {% if submission %}
-                        <p><strong>Status:</strong> Submitted</p>
-                        {% if submission.rating %}
-                            <p><strong>Rating:</strong> {{ submission.rating }}</p>
-                        {% endif %}
-                        {% if submission.feedback %}
-                            <p><strong>Feedback:</strong> {{ submission.feedback }}</p>
-                        {% endif %}
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'assignments:submission_edit' submission.pk %}" class="btn btn-warning btn-sm">
-                                <i class="bi bi-pencil-square"></i> Edit Submission
-                            </a>
-                            <a href="{% url 'assignments:submission_delete' submission.pk %}" class="btn btn-danger btn-sm" 
-                               onclick="return confirm('Are you sure you want to delete your submission?');">
-                                <i class="bi bi-trash"></i> Delete Submission
-                            </a>
-                        </div>
-                    {% else %}
-                        <p>You have not submitted this assignment yet.</p>
-                        <a href="{% url 'assignments:submission_create' assignment.pk %}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-upload"></i> Submit Assignment
-                        </a>
+                {% if submission %}
+                    <p><strong>Status:</strong> Submitted</p>
+                    {% if submission.submitted_file %}
+                        <p><strong>File:</strong> <a href="{{ submission.submitted_file.url }}" download>Download</a></p>
                     {% endif %}
+                    {% if submission.rating %}
+                        <p><strong>Rating:</strong> {{ submission.rating }}</p>
+                    {% endif %}
+                    {% if submission.feedback %}
+                        <p><strong>Feedback:</strong> {{ submission.feedback }}</p>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'assignments:submission_edit' submission.pk %}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil-square"></i> Edit Submission
+                        </a>
+                        <a href="{% url 'assignments:submission_delete' submission.pk %}" class="btn btn-danger btn-sm" 
+                           onclick="return confirm('Are you sure you want to delete your submission?');">
+                            <i class="bi bi-trash"></i> Delete Submission
+                        </a>
+                    </div>
+                {% else %}
+                    <p>You have not submitted this assignment yet.</p>
+                    <a href="{% url 'assignments:submission_create' assignment.pk %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-upload"></i> Submit Assignment
+                    </a>
+                {% endif %}
 
             {% elif user.role == 'admin' or user.role == 'teacher' %}
                 {% if assignment.submissions.exists %}
@@ -69,24 +73,39 @@
                             <tr>
                                 <th>Student</th>
                                 <th>Submitted At</th>
+                                <th>File</th>
                                 <th>Rating</th>
                                 <th>Feedback</th>
-                                <th>Actions</th>
+                                
                             </tr>
                         </thead>
                         <tbody>
                             {% for sub in assignment.submissions.all %}
                             <tr>
-                                <td>{{ sub.student.get_full_name }}</td>
+                                <td>{{ sub.student.get_full_name|default:sub.student.username }}</td>
                                 <td>{{ sub.submitted_at|date:"Y-m-d H:i" }}</td>
-                                <td>{{ sub.rating|default:"-" }}</td>
-                                <td>{{ sub.feedback|default:"-" }}</td>
                                 <td>
-                                    <a href="{% url 'assignments:submission_feedback' sub.pk %}" class="btn btn-info btn-sm">
-                                        <i class="bi bi-chat-square-text"></i> Provide Feedback
-                                    </a>
+                                    {% if sub.submitted_file %}
+                                        <a href="{{ sub.submitted_file.url }}" download>Download</a>
+                                    {% else %}
+                                        <span class="text-muted">No File</span>
+                                    {% endif %}
+                                <td>
+                                    <!-- Rating input: compact + clear -->
+                                    <input type="number" name="rating_{{ sub.pk }}" 
+                                            value="{{ sub.rating|default:'' }}" 
+                                            class="form-control form-control-sm"
+                                            min="0" max="10" 
+                                            placeholder="Score (0-10)">
                                 </td>
-                            </tr>
+                                <td>
+                                    <!-- Feedback as textarea for better readability -->
+                                    <textarea name="feedback_{{ sub.pk }}" 
+                                              rows="2"
+                                              class="form-control form-control-sm"
+                                              placeholder="Write feedback...">{{ sub.feedback|default:'' }}</textarea>
+                                </td>
+
                             {% endfor %}
                         </tbody>
                     </table>

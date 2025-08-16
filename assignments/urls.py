@@ -18,4 +18,6 @@ urlpatterns = [
     path("submission/<int:pk>/", SubmissionDetailView.as_view(), name="submission_detail"),
     path("submission/<int:pk>/delete/", views.SubmissionDeleteView.as_view(), name="submission_delete"),
     path("submission/<int:pk>/feedback/", views.SubmissionFeedbackUpdateView.as_view(), name="submission_feedback"),
+    path('<int:pk>/grade/', views.grade_submissions, name='grade_submissions'),
+
 ]
