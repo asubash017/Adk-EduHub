@@ -121,6 +121,11 @@ class AssignmentCreateView(LoginRequiredMixin, CreateView):
             kwargs["initial"]["due_date"] = timezone.now().date()
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["today"] = timezone.now().date()  # Pass today's date to template
+        return context
+
     def form_valid(self, form):
         form.instance.uploaded_by = self.request.user
         return super().form_valid(form)

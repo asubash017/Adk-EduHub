@@ -68,47 +68,57 @@
 
             {% elif user.role == 'admin' or user.role == 'teacher' %}
                 {% if assignment.submissions.exists %}
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Submitted At</th>
-                                <th>File</th>
-                                <th>Rating</th>
-                                <th>Feedback</th>
-                                
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for sub in assignment.submissions.all %}
-                            <tr>
-                                <td>{{ sub.student.get_full_name|default:sub.student.username }}</td>
-                                <td>{{ sub.submitted_at|date:"Y-m-d H:i" }}</td>
-                                <td>
-                                    {% if sub.submitted_file %}
-                                        <a href="{{ sub.submitted_file.url }}" download>Download</a>
-                                    {% else %}
-                                        <span class="text-muted">No File</span>
-                                    {% endif %}
-                                <td>
-                                    <!-- Rating input: compact + clear -->
-                                    <input type="number" name="rating_{{ sub.pk }}" 
-                                            value="{{ sub.rating|default:'' }}" 
-                                            class="form-control form-control-sm"
-                                            min="0" max="10" 
-                                            placeholder="Score (0-10)">
-                                </td>
-                                <td>
-                                    <!-- Feedback as textarea for better readability -->
-                                    <textarea name="feedback_{{ sub.pk }}" 
-                                              rows="2"
-                                              class="form-control form-control-sm"
-                                              placeholder="Write feedback...">{{ sub.feedback|default:'' }}</textarea>
-                                </td>
-
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <!-- Wrap the submissions table in a form -->
+                    <form method="post" action="{% url 'assignments:grade_submissions' assignment.pk %}">
+                        {% csrf_token %}
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Submitted At</th>
+                                    <th>File</th>
+                                    <th>Rating</th>
+                                    <th>Feedback</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in assignment.submissions.all %}
+                                <tr>
+                                    <td>{{ sub.student.get_full_name|default:sub.student.username }}</td>
+                                    <td>{{ sub.submitted_at|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        {% if sub.submitted_file %}
+                                            <a href="{{ sub.submitted_file.url }}" download>Download</a>
+                                        {% else %}
+                                            <span class="text-muted">No File</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <!-- Rating input -->
+                                        <input type="number" name="rating_{{ sub.pk }}" 
+                                               value="{{ sub.rating|default:'' }}" 
+                                               class="form-control form-control-sm"
+                                               min="0" max="10" 
+                                               placeholder="Score (0-10)">
+                                    </td>
+                                    <td>
+                                        <!-- Feedback textarea -->
+                                        <textarea name="feedback_{{ sub.pk }}" 
+                                                  rows="2"
+                                                  class="form-control form-control-sm"
+                                                  placeholder="Write feedback...">{{ sub.feedback|default:'' }}</textarea>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <!-- Save button -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="bi bi-save"></i> Save All
+                            </button>
+                        </div>
+                    </form>
                 {% else %}
                     <p class="text-muted">No submissions yet.</p>
                 {% endif %}
