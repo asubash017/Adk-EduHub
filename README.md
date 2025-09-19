@@ -2,7 +2,7 @@ ADK EduHub
 Project Overview
 
 ADK EduHub is a role-based educational platform designed to facilitate online learning and campus communication. It provides distinct dashboards and functionalities for admins, teachers, and students, including course management, announcements, schedules, messaging, and profile settings. The platform aims to enhance collaboration and transparency within educational institutions.
-Features
+Features.
 
     Role-based dashboards for Admin, Teacher, and Student
 
